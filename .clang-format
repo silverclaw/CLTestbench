@@ -1,0 +1,92 @@
+---
+Language: Cpp
+Standard: c++17
+DerivePointerAlignment: false
+PointerAlignment: Left
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: DontAlign
+AlignOperands: Align
+#AllowAllConstructorInitializersOnNextLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+#AllowShortLambdasOnASingleLine: Inline
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: true
+BinPackParameters: true
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: false
+  BeforeElse: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+BreakBeforeBraces: Custom
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
+BreakStringLiterals: true
+ColumnLimit: 120
+CompactNamespaces: false
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+FixNamespaceComments: true
+# 0 - C-Style headers
+# 1 - C++-style headers
+# 2 - Khronos CL headers
+# 3 - Anything else
+IncludeCategories:
+  - Regex:           '^<[a-z_/]+\.h>$'
+    Priority:        -2
+    SortPriority:    -2
+    CaseSensitive:   true
+  - Regex:           '^<[a-z_]+>$'
+    Priority:        -2
+    SortPriority:    -1
+    CaseSensitive:   true
+  - Regex:           '^<CL\/[a-z_]+\.h>$'
+    Priority:        -1
+    CaseSensitive:   true
+  - Regex:           '^"[a-z_]"$'
+    Priority:        1
+IncludeBlocks: Regroup
+IndentCaseLabels: false
+IndentAccessModifiers: false
+AccessModifierOffset: -4
+IndentExternBlock: NoIndent
+IndentPPDirectives: BeforeHash
+IndentWidth: 4
+NamespaceIndentation: None
+QualifierAlignment: Left
+PointerAlignment: Left
+SortIncludes: true
+SortUsingDeclarations: true
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+TabWidth: 4
+UseTab: Never
+...
