@@ -25,42 +25,57 @@ using namespace CLTestbench;
 
 namespace
 {
-/// Ensures the script level is decrememnted, even on exceptions.
+/// Ensures the script level is decremented, even on exceptions.
 struct ScriptLevelGuard final
 {
-	uint32_t& mLevel;
-	explicit ScriptLevelGuard(uint32_t& level) : mLevel(level)
-	{
-		mLevel += 1;
-	}
+    uint32_t& mLevel;
+    explicit ScriptLevelGuard(uint32_t& level) : mLevel(level)
+    {
+        mLevel += 1;
+    }
 
-	~ScriptLevelGuard()
-	{
-		mLevel -= 1;
-	}
+    ~ScriptLevelGuard()
+    {
+        mLevel -= 1;
+    }
 };
 } // namespace
 
 void Testbench::executeScript(TokenStream& tokens)
 {
-	if (!tokens)
-		throw CommandError("Expected file name argument to 'script' command.\n");
+    if (!tokens)
+        throw CommandError("Expected file name argument to 'script' command.\n");
 
-	auto filename = tokens.currentText();
-	std::filesystem::path path(filename);
-	std::ifstream file(path);
+    auto filename = TrimWhitespace(tokens.currentText());
+    std::filesystem::path path(filename);
+    std::ifstream file(path);
 
-	ScriptLevelGuard guard(mScriptLevel);
+    if (!file.is_open()) {
+        throw CommandError(std::strerror(errno), tokens.remainingTextAsToken());
+    }
 
-	for (std::string line; std::getline(file, line); ) {
-		auto trimmedLine = TrimWhitespace(line);
-		if (trimmedLine.empty()) continue;
-		if (trimmedLine[0] == '#') continue;
-		TokenStream stream(trimmedLine);
-		if (mOptions.scriptEcho && trimmedLine[0] != '@')
-			*mOut << trimmedLine;
-		auto result = run(stream);
-		if (result != Result::Good)
-			return;
-	}
+    ScriptLevelGuard guard(mScriptLevel);
+
+    for (std::string line; std::getline(file, line); ) {
+        auto trimmedLine = TrimWhitespace(line);
+        if (trimmedLine.empty()) continue;
+        if (trimmedLine[0] == '#') continue;
+        bool echoLine = mOptions.scriptEcho;
+        if (trimmedLine[0] == '@') {
+            trimmedLine = TrimWhitespace(trimmedLine.substr(1));
+            echoLine = false;
+        }
+        if (echoLine)
+            *mOut << trimmedLine << '\n';
+
+        TokenStream stream(trimmedLine);
+
+        auto result = run(stream);
+        if (result != Result::Good)
+            return;
+    }
+
+    if (file.fail()) {
+        throw CommandError(std::strerror(errno), tokens.remainingTextAsToken());
+    }
 }

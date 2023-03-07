@@ -167,7 +167,7 @@ TEST_CASE("Tokens")
 
     SECTION("Parse two texts")
     {
-        const char* line = "\"text 1\"\"text 2\"";
+        const char* line = "\"text 1\"\"text 2 \" \"text3\" ";
         CLTestbench::TokenStream stream(line);
 
         auto token = stream.consume();
@@ -176,8 +176,12 @@ TEST_CASE("Tokens")
         CHECK(stream.getUnquotedText(token) == "text 1");
         token = stream.consume();
         CHECK(token.mType == CLTestbench::Token::Text);
-        CHECK(stream.getTokenText(token) == "\"text 2\"");
-        CHECK(stream.getUnquotedText(token) == "text 2");
+        CHECK(stream.getTokenText(token) == "\"text 2 \"");
+        CHECK(stream.getUnquotedText(token) == "text 2 ");
+        token = stream.consume();
+        CHECK(token.mType == CLTestbench::Token::Text);
+        CHECK(stream.getTokenText(token) == "\"text3\"");
+        CHECK(stream.getUnquotedText(token) == "text3");
         CHECK(stream.current().mType == CLTestbench::Token::End);
         CHECK(stream.next().mType == CLTestbench::Token::Invalid);
     }
@@ -297,7 +301,7 @@ TEST_CASE("Constants")
 
     SECTION("Boolean")
     {
-        const char* booleans = "1 y yes t true 0 n no f false";
+        const char* booleans = "1 y yes on t true 0 n no off f false";
         CLTestbench::TokenStream stream(booleans);
 
         auto token = stream.consume();
@@ -313,6 +317,11 @@ TEST_CASE("Constants")
         token = stream.consume();
         CHECK(token.mType == CLTestbench::Token::String);
         CHECK(stream.getTokenText(token) == "yes");
+        CHECK(stream.parseConstant<bool>(token) == true);
+
+        token = stream.consume();
+        CHECK(token.mType == CLTestbench::Token::String);
+        CHECK(stream.getTokenText(token) == "on");
         CHECK(stream.parseConstant<bool>(token) == true);
 
         token = stream.consume();
@@ -338,6 +347,11 @@ TEST_CASE("Constants")
         token = stream.consume();
         CHECK(token.mType == CLTestbench::Token::String);
         CHECK(stream.getTokenText(token) == "no");
+        CHECK(stream.parseConstant<bool>(token) == false);
+
+        token = stream.consume();
+        CHECK(token.mType == CLTestbench::Token::String);
+        CHECK(stream.getTokenText(token) == "off");
         CHECK(stream.parseConstant<bool>(token) == false);
 
         token = stream.consume();

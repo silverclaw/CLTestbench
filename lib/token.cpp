@@ -59,8 +59,8 @@ bool IsTokenSeparator(char c)
     case '~':  // Home-directory character
     case '.':  // File extension separator
     case '/':  // Unix path separator
-    case '\'': // Windows path separator
-        return false;
+    case '\\': // Windows path separator
+    return false;
     default: break;
     }
 

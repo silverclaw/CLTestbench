@@ -206,6 +206,13 @@ std::shared_ptr<Object> Testbench::evaluate(TokenStream& tokens)
         return evaluateProgram(tokens);
     }
 
+    if (tokenText == "binary") {
+        if (!mDriver) {
+            throw CommandError("A driver is required for a 'binary' expression.", token);
+        }
+        return evaluateBinary(tokens);
+    }
+
     if (tokenText == "kernel") {
         if (!mDriver) {
             throw CommandError("A driver is required for a 'kernel' expression.", token);

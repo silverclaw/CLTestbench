@@ -18,6 +18,7 @@
 
 #include "testbench.hpp"
 
+#include "commands.hpp"
 #include "driver.hpp"
 #include "error.hpp"
 #include "istringview.hpp"
@@ -46,7 +47,7 @@ Testbench::Result Testbench::run(std::string_view line)
         // span multiple lines.  TODO: Replace with terminal query.
         if (mOptions.caretPrint && e.hasLocationInfo() && line.length() < 120) {
             if (mScriptLevel == 0) {
-                // Offset the prompt size.
+                // Offset the prompt size.  This should be std::strlen(Editline::Prompt).
                 *mErr << "        ";
             } else if (mOptions.scriptEcho == 0) {
                 // There won't be an echo from the prompt when running
@@ -60,7 +61,7 @@ Testbench::Result Testbench::run(std::string_view line)
         if (e.mPrinter)
             e.mPrinter(*mErr);
         else
-            *mErr << "Syntax error on command: " << e.what() << '\n';
+            *mErr << "Command error: " << e.what() << '\n';
     } catch (const std::bad_alloc&) {
         *mErr << "Memory allocation failed. (out of memory?)\n";
     } // Allow any other exception to propagate out.
@@ -106,33 +107,23 @@ Testbench::Result Testbench::run(TokenStream& tokens)
         return Result::Good;
     }
 
-    const std::initializer_list<std::string_view> commands {
-        "load", "select", "info", "list", "set",
-        // Add some unmatchable filler commands here to push
-        // the index of "quit" and "help" down, so we can
-        // add more commands without having to update the indicies.
-        "release", "save", "run", "script",
-        "wait", " filler", " filler", " filler",
-        " filler", " filler", " filler", " filler",
-        "help", "quit"
-    };
-
     IStringView command = tokens.getTokenText(first);
-    auto match = command.autocomplete(commands);
+    auto match = command.autocomplete(CommandList);
     switch (match) {
-    case 0: executeLoad(tokens); break;
-    case 1: executeSelect(tokens); break;
-    case 2: executeInfo(tokens); break;
-    case 3: executeList(tokens); break;
-    case 4: executeSet(tokens); break;
-    case 5: executeRelease(tokens); break;
-    case 6: executeSave(tokens); break;
-    case 7: executeRun(tokens); break;
-    case 8: executeFlush(tokens); break;
-    case 9: executeWait(tokens); break;
-    case 10: executeScript(tokens); break;
-    case 17: executeHelp(tokens); break;
-    case 18:
+    case Command::Load: executeLoad(tokens); break;
+    case Command::Select: executeSelect(tokens); break;
+    case Command::Info: executeInfo(tokens); break;
+    case Command::List: executeList(tokens); break;
+    case Command::Set: executeSet(tokens); break;
+    case Command::Release: executeRelease(tokens); break;
+    case Command::Save: executeSave(tokens); break;
+    case Command::Run: executeRun(tokens); break;
+    case Command::Script: executeScript(tokens); break;
+    case Command::Wait: executeWait(tokens); break;
+    case Command::Flush: executeFlush(tokens); break;
+    case Command::Bind: executeBind(tokens); break;
+    case Command::Help: executeHelp(tokens); break;
+    case Command::Quit:
         if (tokens) *mErr << "Trailing tokens after 'quit' command ignored.\n";
         return Result::Quit;
     case IStringView::ambiguous:
@@ -189,9 +180,10 @@ unsigned Testbench::clearDriverObjects() noexcept
     unsigned count = 0;
     for (auto it = mObjects.begin(); it != mObjects.end();) {
         Object* obj = it->second.get();
+        auto current = it;
         ++it;
         if (dynamic_cast<CLObject*>(obj)) {
-            mObjects.erase(it);
+            mObjects.erase(current);
             ++count;
         }
     }

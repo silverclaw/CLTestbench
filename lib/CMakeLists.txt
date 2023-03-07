@@ -4,6 +4,7 @@ cmake_dependent_option(USE_LIBPNG "Add support for loading PNG files." ON
                        "PNG_FOUND" OFF)
 
 add_library(cltb_objs OBJECT
+            bind.cpp
             clone.cpp
             driver.cpp
             istringview.cpp
@@ -26,12 +27,12 @@ add_library(cltb_objs OBJECT
             help.cpp)
 
 target_include_directories(cltb_objs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-get_target_property(KHRONOS_HEADERS OpenCL::Headers INTERFACE_INCLUDE_DIRECTORIES)
-target_include_directories(cltb_objs SYSTEM PUBLIC ${KHRONOS_HEADERS})
-
+target_include_directories(cltb_objs SYSTEM PUBLIC ${OpenCL_INCLUDE_DIR})
+# CLTestbench requires a somewhat basic OpenCL version.
 target_compile_definitions(cltb_objs PUBLIC CL_TARGET_OPENCL_VERSION=220)
 
 set_target_properties(cltb_objs PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
     CXX_STANDARD 17
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN on)
@@ -44,3 +45,16 @@ endif (USE_LIBPNG)
 
 target_link_libraries(cltb_objs PUBLIC ${CMAKE_DL_LIBS})
 
+add_library(CLIntercept SHARED
+    intercept.cpp
+    library.cpp)
+
+set_target_properties(CLIntercept PROPERTIES
+    CXX_STANDARD 17
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN on)
+
+# Target an arbitrary API version to implement.  We're not looking for conformance,
+# so it ultimately won't matter.
+target_compile_definitions(CLIntercept PUBLIC CL_TARGET_OPENCL_VERSION=300)
+target_include_directories(CLIntercept SYSTEM PUBLIC ${OpenCL_INCLUDE_DIR})

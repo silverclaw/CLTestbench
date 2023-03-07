@@ -43,7 +43,7 @@ void Testbench::executeSelect(TokenStream& tokens)
     }
 
     tokens.advance();
-    Token argumentToken = tokens.current();
+    Token argumentToken = tokens.consume();
 
     if (command == "platform") {
         if (argumentToken.mType == Token::End) {

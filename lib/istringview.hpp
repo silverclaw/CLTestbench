@@ -45,7 +45,7 @@ public:
     std::size_t autocomplete(std::initializer_list<std::string_view> matches) const noexcept;
 };
 
-inline bool operator==(const IStringView& a, const IStringView& b)
+inline bool operator==(const IStringView& a, const IStringView& b) noexcept
 {
     if (a.length() != b.length()) return false;
 

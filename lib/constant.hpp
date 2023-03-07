@@ -46,8 +46,8 @@ T TokenStream::parseConstant(Token token) const
             }
         }
 
-        if (str == "false" || str == "no") return false;
-        if (str == "true" || str == "yes") return true;
+        if (str == "false" || str == "no" || str == "off") return false;
+        if (str == "true" || str == "yes" || str == "on") return true;
 
         throw CommandError("Cannot parse as boolean", token);
     }

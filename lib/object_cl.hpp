@@ -39,7 +39,7 @@ public:
 
     operator T() noexcept { return mObject; }
 
-    std::string_view type() const noexcept
+    std::string_view type() const noexcept override
     {
         if (std::is_same_v<T, cl_mem>) return "CL memory object";
         if (std::is_same_v<T, cl_kernel>) return "CL kernel object";

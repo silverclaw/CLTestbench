@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.1.0
+  GIT_TAG        v3.4.0
 )
 
 FetchContent_MakeAvailable(Catch2)
@@ -36,7 +36,6 @@ add_library(dummycl SHARED dummydriver.c)
 target_compile_definitions(dummycl PUBLIC CL_TARGET_OPENCL_VERSION=220)
 set_target_properties(dummycl PROPERTIES
     VISIBILITY_INLINES_HIDDEN on)
-
 
 include(CTest)
 include(Catch)

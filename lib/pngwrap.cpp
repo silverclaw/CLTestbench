@@ -24,12 +24,16 @@
 #include <cstring> // memcpy, memset
 #include <vector>
 
+#endif // USE_LIBPNG
+
 #include "error.hpp"
 #include "object_image.hpp"
 #include "testbench.hpp"
 #include "token.hpp"
 
 using namespace CLTestbench;
+
+#if USE_LIBPNG
 
 namespace
 {
@@ -196,25 +200,7 @@ private:
         }
     }
 };
-} // namespace
 
-std::unique_ptr<ImageObject> CLTestbench::LoadPNG(const void* data, std::size_t size, const Token& token,
-                                                  std::string_view filename)
-{
-    const png_byte* pngData = reinterpret_cast<const png_byte*>(data);
-    if (png_sig_cmp(pngData, 0, 8) != 0) {
-        throw CommandError("PNG signature check failed.", token);
-    }
-
-    PNGDecoder decoder(token);
-    auto image = decoder.read(reinterpret_cast<const png_byte*>(data), size);
-    assert(image);
-    if (!filename.empty()) image->mFilename = filename;
-    return image;
-}
-
-namespace
-{
 class PNGEncoder
 {
 public:
@@ -306,26 +292,34 @@ private:
 };
 } // namespace
 
-void CLTestbench::WritePNG(const ImageObject& img, const Token& imgToken, const Token& fileToken,
+#endif // USE_LIBPNG
+
+std::unique_ptr<ImageObject> CLTestbench::LoadPNG(const void* data, std::size_t size, const Token& token,
+                                                  std::string_view filename)
+{
+#if USE_LIBPNG
+    const png_byte* pngData = reinterpret_cast<const png_byte*>(data);
+    if (png_sig_cmp(pngData, 0, 8) != 0) {
+        throw CommandError("PNG signature check failed.", token);
+    }
+
+    PNGDecoder decoder(token);
+    auto image = decoder.read(reinterpret_cast<const png_byte*>(data), size);
+    assert(image);
+    if (!filename.empty()) image->mFilename = filename;
+    return image;
+#else // USE_LIBPNG
+    throw CommandError("PNG support not enabled", token);
+#endif // USE_LIBPNG
+}
+
+void CLTestbench::WritePNG(const ImageObject& img, const Token& imgToken, const Token& token,
                            std::string_view filename)
 {
-    PNGEncoder encoder(filename, fileToken);
+#if USE_LIBPNG
+    PNGEncoder encoder(filename, token);
     encoder.write(img, imgToken);
-}
-
 #else // USE_LIBPNG
-
-#include "token.h"
-#include "error.h"
-
-using namespace CLTestbench;
-std::unique_ptr<ImageObject> CLTestbench::LoadPNG(const void*, std::size_t, const Token& token)
-{
     throw CommandError("PNG support not enabled", token);
-}
-
-void CLTestbench::WritePNG(const ImageObject&, const Token&, const Token& token, std::string_view)
-{
-    throw CommandError("PNG support not enabled", token);
-}
 #endif // USE_LIBPNG
+}

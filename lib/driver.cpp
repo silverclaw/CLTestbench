@@ -23,7 +23,7 @@ using namespace CLTestbench;
 
 /// Binds a function into the dispatch table.
 #define BindFn(fnname) \
-    if (!mCLFns.fnname) mCLFns.fnname = mLib.bind<cl_api_##fnname>(#fnname)
+    if (!mCLFns.fnname) mCLFns.fnname = mLib.bind<decltype(mCLFns.fnname)>(#fnname)
 
 /// Verifies if the CL call X returns an error, and throws it.
 #define Checked(X) \
@@ -40,15 +40,30 @@ Driver::Driver(std::string_view filename) : mLib(filename), mCLFns{}
     BindFn(clReleaseContext);
 
     cl_uint numPlatforms = 0;
-    Checked(mCLFns.clGetPlatformIDs(1, &mPlatform, &numPlatforms));
+    Checked(mCLFns.clGetPlatformIDs(0, nullptr, &numPlatforms));
 
     // This is a fake error, but the rest of the code assumes that there will be a platform available.
     if (numPlatforms == 0) throw Error(CL_INVALID_PLATFORM);
 
+    std::vector<cl_platform_id> platforms;
+    platforms.resize(numPlatforms);
+    Checked(mCLFns.clGetPlatformIDs(numPlatforms, platforms.data(), &numPlatforms));
+    assert(numPlatforms == platforms.size());
+
     cl_uint numDevices = 0;
-    Checked(mCLFns.clGetDeviceIDs(mPlatform, CL_DEVICE_TYPE_ALL, 1, &mDevice, &numDevices));
+
+    // Find the first platform with any device.
+    for (cl_platform_id p : platforms) {
+        mPlatform = p;
+        if (mCLFns.clGetDeviceIDs(mPlatform, CL_DEVICE_TYPE_ALL, 1, &mDevice, &numDevices) != CL_SUCCESS) continue;
+        // We found a platform with at least one valid device.
+        // We're done.
+        if (numDevices != 0) return;
+    }
+
     // This is a fake error, but the rest of the code assumes that there will be a device available.
-    if (numDevices == 0) throw Error(CL_INVALID_DEVICE);
+    assert(numDevices == 0);
+    throw Error(CL_INVALID_DEVICE);
 }
 
 Driver::~Driver()
@@ -71,9 +86,12 @@ const char* Driver::Error::what() const noexcept
     case CL_INVALID_VALUE: return "Invalid value";
     case CL_INVALID_DEVICE: return "Invalid device";
     case CL_INVALID_MEM_OBJECT: return "Invalid memory object";
+    case CL_INVALID_BINARY: return "Invalid binary";
     case CL_INVALID_BUILD_OPTIONS: return "Invalid build options";
     case CL_INVALID_KERNEL_NAME: return "Invalid kernel name";
     case CL_INVALID_ARG_INDEX: return "Invalid kernel argument index";
+    case CL_INVALID_ARG_VALUE: return "Invalid kernel argument value";
+    case CL_INVALID_ARG_SIZE: return "Invalid kernela argument size";
     case CL_INVALID_KERNEL_ARGS: return "Invalid kernel argument";
     case CL_INVALID_BUFFER_SIZE: return "Invalid buffer size";
     case CL_INVALID_GLOBAL_WORK_SIZE: return "Invalid global size";
@@ -233,6 +251,22 @@ std::unique_ptr<ProgramObject> Driver::createProgram(std::string_view source)
     return std::make_unique<ProgramObject>(program, mCLFns.clReleaseProgram);
 }
 
+std::unique_ptr<ProgramObject> Driver::createProgramBinary(const void* binary, std::size_t size)
+{
+    BindFn(clCreateProgramWithBinary);
+    BindFn(clBuildProgram);
+    BindFn(clReleaseProgram);
+
+    const unsigned char* srcData = reinterpret_cast<const unsigned char*>(binary);
+    cl_int err = CL_SUCCESS;
+    cl_device_id devices[] = {mDevice};
+    cl_int status;
+    cl_program program = mCLFns.clCreateProgramWithBinary(*this, 1, devices, &size, &srcData, &status, &err);
+    Checked(err);
+
+    return std::make_unique<ProgramObject>(program, mCLFns.clReleaseProgram);
+}
+
 void Driver::buildProgram(cl_program program, const char* opts)
 {
     BindFn(clBuildProgram);
@@ -260,13 +294,12 @@ std::vector<char> Driver::programBinary(cl_program program)
     BindFn(clGetProgramInfo);
 
     size_t binarySize = 0;
-    size_t* sizeArray = &binarySize;
     size_t outputSize = 0;
-    Checked(mCLFns.clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(sizeArray), &sizeArray, &outputSize));
+    Checked(mCLFns.clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(binarySize), &binarySize, &outputSize));
     std::vector<char> binary;
     binary.resize(binarySize);
     char* binaryData = binary.data();
-    Checked(mCLFns.clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(binaryData), &binaryData, &outputSize));
+    Checked(mCLFns.clGetProgramInfo(program, CL_PROGRAM_BINARIES, binarySize, &binaryData, &outputSize));
     return binary;
 }
 
@@ -362,8 +395,8 @@ void Driver::enqueueKernel(cl_kernel kernel, EnqueueSize global,
     BindFn(clEnqueueNDRangeKernel);
 
     cl_uint dim = 1;
-	if (global[2] != 0) dim = 3;
-	else if (global[1] != 0) dim = 2;
+    if (global[2] != 0) dim = 3;
+    else if (global[1] != 0) dim = 2;
     const std::size_t* localSize = local ? local->data() : nullptr;
 
     Checked(mCLFns.clEnqueueNDRangeKernel(*this, kernel, dim, nullptr, global.data(),

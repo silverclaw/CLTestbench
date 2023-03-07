@@ -87,6 +87,7 @@ private:
     void executeSave(TokenStream&);
     void executeRun(TokenStream&);
     void executeFlush(TokenStream&);
+    void executeBind(TokenStream&);
     void executeWait(TokenStream&);
     void executeScript(TokenStream&);
     void executeHelp(TokenStream&);
@@ -95,6 +96,8 @@ private:
     std::shared_ptr<Object> evaluateBuffer(TokenStream&);
     /// Evaluate a "program" directive.
     std::shared_ptr<Object> evaluateProgram(TokenStream&);
+    /// Evaluate a "binary" directive.
+    std::shared_ptr<Object> evaluateBinary(TokenStream&);
     /// Evaluate a "kernel" directive.
     std::shared_ptr<Object> evaluateKernel(TokenStream&);
     /// Evaluate a "file" directive.

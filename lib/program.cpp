@@ -84,3 +84,52 @@ std::shared_ptr<Object> Testbench::evaluateProgram(TokenStream& tokens)
 
     return program;
 }
+
+std::shared_ptr<Object> Testbench::evaluateBinary(TokenStream& tokens)
+{
+    // Expect a '('.
+    auto paren = tokens.current();
+    if (paren.mType != Token::OpenParen)
+        throw CommandError("Expected '(' for 'binary' function.", paren);
+    tokens.advance();
+
+    // Save the next token for diagnostics.
+    auto nextToken = tokens.current();
+    // This could be some expression which will evaluate to the source.
+    std::shared_ptr<Object> sourceObject = evaluate(tokens);
+    auto* data = dynamic_cast<DataObject*>(sourceObject.get());
+    if (!data) {
+        throw CommandError("Provided argument cannot be used as binary data", nextToken);
+    }
+
+    std::string buildOpts;
+    if (tokens.current().mType == Token::Comma) {
+        // Build options were specified.
+        tokens.advance();
+        if (tokens.current().mType != Token::Text) {
+            throw CommandError("Expected build options string for 'binary' command.", tokens.current());
+        }
+        buildOpts = tokens.getUnquotedText(tokens.consume());
+    }
+
+    paren = tokens.current();
+    if (paren.mType != Token::CloseParen)
+        throw CommandError("Expected ')' for 'binary' function.", paren);
+    tokens.advance();
+
+    auto program = mDriver->createProgramBinary(data->data(), data->size());
+
+    // Intercept build failures here
+    try {
+        mDriver->buildProgram(*program, buildOpts.c_str());
+    } catch (const Driver::Error& e) {
+        if (e.mError == CL_BUILD_PROGRAM_FAILURE) {
+            *mErr << "Program build failure:\n" << mDriver->programBuildLog(*program) << '\n';
+        }
+
+        // We need to rethrow to break out of nested operations.
+        throw;
+    }
+
+    return program;
+}

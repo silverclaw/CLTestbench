@@ -39,7 +39,7 @@ void PrintHelp(std::string_view binName)
         "\n"
         "The Testbench will attempt to load the specified OpenCL implementation\n"
         "given by the 'opencl library' argument, which must be a shared library.\n"
-        "By default, this is 'libOpenCL.so', searched on the system configured\n"
+        "By default, this is 'libOpenCL.so', found on the system configured\n"
         "library search paths.\n";
 }
 }

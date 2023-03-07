@@ -31,7 +31,8 @@ TEST_CASE("Images")
     bench.resetErrorOutput(output);
 
     try {
-        bench.run("load /usr/lib64/libOpenCL.so");
+        CLTestbench::TokenStream stream("load libOpenCL.so");
+        bench.run(stream);
     } catch (...) {
         INFO("No CL implementation available.  Skipping Image tests.");
         return;
@@ -61,3 +62,4 @@ TEST_CASE("Images")
         CHECK(bench.run("release img") == Result::Good);
     }
 }
+

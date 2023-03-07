@@ -16,6 +16,7 @@
 #include <cassert>
 #include <iostream>
 
+#include "commands.hpp"
 #include "driver.hpp"
 #include "istringview.hpp"
 #include "object.hpp"
@@ -35,12 +36,15 @@ void GenericHelp(std::ostream& out)
            "                               Defaults to the first platform/device found (N is 0).\n"
            "                               Ommitting argument shows currently selected platform/device.\n"
            " * VAR = EXPRESSION          - Defines a variable constructed with an evaluated expression.\n"
+           "                               Use 'help expression' to list supported expressions.\n"
            " * release VAR               - Clears a defined variable, releasing associated memory.\n"
            " * run                       - Runs a kernel with the given arguments.\n"
            " * list                      - Lists all defined variables.\n"
            " * save                      - Saves a data object to disk.\n"
            " * script                    - Runs commands from a script file.\n"
+           " * flush                     - Flushes the queued commands.\n"
            " * wait                      - Blocks until all pending OpenCL commands finish.\n"
+           " * clone                     - Clones a CL Object.\n"
            "Use 'help command' for command-specific information.  Use 'help expression' for a list of\n"
            "functions available for object construction.\n";
 }
@@ -53,6 +57,16 @@ void HelpForExpressionProgram(std::ostream& out)
            "Build arguments can be specified as a string.\n"
            "Example:\n"
            "    p = program(file(\"source.cl\"), \"-cl-fast-relaxed-math -cl-std=CL2.0\")\n"
+           "If the program fails to compile, appropriate diagnostics will be printed.\n";
+}
+
+void HelpForExpressionBinary(std::ostream& out)
+{
+    out << "binary(data)\n"
+           "Builds the given program binary.\n"
+           "The resulting object can then be used for kernel() calls.\n"
+           "Example:\n"
+           "    p = binary(file(\"prog.bin\"), \"-cl-fast-relaxed-math -cl-std=CL2.0\")\n"
            "If the program fails to compile, appropriate diagnostics will be printed.\n";
 }
 
@@ -137,7 +151,8 @@ void HelpForExpressionType(std::ostream& out)
 {
     out << "TYPE(DATA[, DATA...])\n"
            "Creates a data object based on the given type.\n"
-           "This object can then be used to initialise an OpenCL buffer.\n"
+           "This object can then be used to initialise an OpenCL buffer,\n"
+           "or set as a kernel argument.\n"
            "TYPE can be any of the following OpenCL C types:\n"
            " * Floating point: half, float double.\n"
            " * Integer types: char, short, int, long, and their unsigned variants.\n"
@@ -146,9 +161,11 @@ void HelpForExpressionType(std::ostream& out)
            "    uidata = uint(45, 0xFFFF)\n"
            "These data objects can be used to create buffers:\n"
            "    arg = buffer(fdata)\n"
+           "Or used as kernel arguments:\n"
+           "    run(kernel, (1, 1, 1), int(3))\n"
            "The underlying data will be copied to the OpenCL implementation.\n"
            "The size of an OpenCL buffer created this way will be inferred by the size\n"
-           "of the data object used.\n";
+           "of the data type specified.\n";
 }
 
 void HelpForExpressionClone(std::ostream& out)
@@ -170,7 +187,7 @@ void HelpForExpression(std::ostream& out, TokenStream& tokens)
         Token subexpr = tokens.consume();
         IStringView command = tokens.getTokenText(subexpr);
         const std::initializer_list<std::string_view> commands {
-            "program", "kernel", "buffer", "image", "file", "type", "clone"
+            "program", "kernel", "buffer", "image", "file", "type", "clone", "binary"
         };
 
         switch (command.autocomplete(commands)) {
@@ -181,6 +198,7 @@ void HelpForExpression(std::ostream& out, TokenStream& tokens)
         case 4: HelpForExpressionFile(out); return;
         case 5: HelpForExpressionType(out); return;
         case 6: HelpForExpressionClone(out); return;
+        case 7: HelpForExpressionBinary(out); return;
         case IStringView::ambiguous:
             out << "Ambiguous argument for help expression '" << command << "'\n";
             return;
@@ -284,7 +302,9 @@ void HelpForInfo(std::ostream& out)
 {
     out << "Displays information on the current state of the testbench.\n"
            "Available operands:\n"
-           " * lib - Displays driver library information.\n";
+           " * platforms - Displays list of available platforms.\n"
+           " * devices   - Displays list of available devices.\n"
+           " * lib       - Displays driver library information.\n";
     return;
 }
 
@@ -293,9 +313,17 @@ void HelpForScript(std::ostream& out)
     out << "script FILENAME\n"
            "Runs all commands on the given file line by line.\n"
            "Lines starting with the character '#' are ignored.\n"
-           "Commands will be eched prior to execution unless the\n"
+           "Commands will be echoed prior to execution unless the\n"
            "line starts with the character '@', or echo has been\n"
            "disabled (see 'set echo').\n";
+}
+
+void HelpForBind(std::ostream& out)
+{
+    out << "bind KERNEL ARGNO OBJECT [OBJECT ...]\n"
+           "Binds kernel arguments.\n"
+           "The objects are set as sequential kernel arguments,\n"
+           "starting at ARGNO.\n";
 }
 } // namespace
 
@@ -308,8 +336,10 @@ void Testbench::executeHelp(TokenStream& tokens)
 
     Token next = tokens.consume();
     IStringView command = tokens.getTokenText(next);
-    const std::initializer_list<std::string_view> commands{"help", "info", "set",   "expression",
-                                                           "save", "run",  "script"};
+    const std::initializer_list<std::string_view> commands{
+        "help", "info", "set", "expression",
+        "save", "run", "script", "bind"
+    };
 
     switch (command.autocomplete(commands)) {
     case 0: // help
@@ -321,6 +351,7 @@ void Testbench::executeHelp(TokenStream& tokens)
     case 4: HelpForSave(*mOut); break;
     case 5: HelpForRun(*mOut); break;
     case 6: HelpForScript(*mOut); break;
+    case 7: HelpForBind(*mOut); break;
     case IStringView::ambiguous:
         *mOut << "Ambiguous argument for help '" << command << "'\n";
         break;

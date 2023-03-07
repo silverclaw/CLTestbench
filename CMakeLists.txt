@@ -8,20 +8,24 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
         set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (default Debug)." FORCE)
 endif()
 
-include(FetchContent)
-FetchContent_Declare(
-  OpenCLHeaders
-  GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
-  GIT_TAG        main
-)
-FetchContent_MakeAvailable(OpenCLHeaders)
+find_package(OpenCL)
+if (NOT OpenCL_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        OpenCLHeaders
+        GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
+        GIT_TAG        main
+    )
+    FetchContent_MakeAvailable(OpenCLHeaders)
+    get_target_property(OpenCL_INCLUDE_DIR OpenCL::Headers INTERFACE_INCLUDE_DIRECTORIES)
+endif()
 
 find_program(CCACHE_BIN ccache DOC "Path to CCache binary")
 if (CCACHE_BIN)
-        option(USE_CCACHE "Enable use of CCache." ON)
-        if (USE_CCACHE)
-                set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_BIN})
-        endif(USE_CCACHE)
+    option(USE_CCACHE "Enable use of CCache." ON)
+    if (USE_CCACHE)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_BIN})
+    endif(USE_CCACHE)
 endif(CCACHE_BIN)
 
 add_subdirectory(lib)

@@ -64,7 +64,7 @@ void Testbench::executeSave(TokenStream& tokens)
     auto filename = TrimWhitespace(tokens.currentText());
     std::filesystem::path filepath(filename);
 
-    // Must be a data object.
+    // Find out what we're saving.
     if (auto* data = dynamic_cast<DataObject*>(object.get())) {
         dataPtr = static_cast<const char*>(data->data());
         dataSize = data->size();
@@ -113,6 +113,8 @@ void Testbench::executeSave(TokenStream& tokens)
     } else if (auto* progObj = dynamic_cast<ProgramObject*>(object.get())) {
         assert(mDriver && "How do we have a program object without a driver?");
         memObjData = mDriver->programBinary(*progObj);
+		dataPtr = memObjData.data();
+		dataSize = memObjData.size();
     } else {
         throw CommandError("Cannot get object data.", objToken);
     }

@@ -100,6 +100,7 @@ public:
     DeviceInfo getDeviceInfo(cl_device_id);
 
     std::unique_ptr<ProgramObject> createProgram(std::string_view source);
+    std::unique_ptr<ProgramObject> createProgramBinary(const void* binary, std::size_t size);
     void buildProgram(cl_program, const char* opts);
     std::string programBuildLog(cl_program);
     std::vector<char> programBinary(cl_program);
