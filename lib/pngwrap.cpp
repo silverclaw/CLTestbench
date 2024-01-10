@@ -15,7 +15,7 @@
 
 #include "cltb_config.h"
 
-#if USE_LIBPNG
+#if CLTB_USE_LIBPNG
 
 #include <linux/limits.h> // PATH_MAX
 #include <png.h>
@@ -24,7 +24,7 @@
 #include <cstring> // memcpy, memset
 #include <vector>
 
-#endif // USE_LIBPNG
+#endif // CLTB_USE_LIBPNG
 
 #include "error.hpp"
 #include "object_image.hpp"
@@ -33,7 +33,7 @@
 
 using namespace CLTestbench;
 
-#if USE_LIBPNG
+#if CLTB_USE_LIBPNG
 
 namespace
 {
@@ -292,12 +292,12 @@ private:
 };
 } // namespace
 
-#endif // USE_LIBPNG
+#endif // CLTB_USE_LIBPNG
 
 std::unique_ptr<ImageObject> CLTestbench::LoadPNG(const void* data, std::size_t size, const Token& token,
                                                   std::string_view filename)
 {
-#if USE_LIBPNG
+#if CLTB_USE_LIBPNG
     const png_byte* pngData = reinterpret_cast<const png_byte*>(data);
     if (png_sig_cmp(pngData, 0, 8) != 0) {
         throw CommandError("PNG signature check failed.", token);
@@ -308,18 +308,18 @@ std::unique_ptr<ImageObject> CLTestbench::LoadPNG(const void* data, std::size_t 
     assert(image);
     if (!filename.empty()) image->mFilename = filename;
     return image;
-#else // USE_LIBPNG
+#else // CLTB_USE_LIBPNG
     throw CommandError("PNG support not enabled", token);
-#endif // USE_LIBPNG
+#endif // CLTB_USE_LIBPNG
 }
 
 void CLTestbench::WritePNG(const ImageObject& img, const Token& imgToken, const Token& token,
                            std::string_view filename)
 {
-#if USE_LIBPNG
+#if CLTB_USE_LIBPNG
     PNGEncoder encoder(filename, token);
     encoder.write(img, imgToken);
-#else // USE_LIBPNG
+#else // CLTB_USE_LIBPNG
     throw CommandError("PNG support not enabled", token);
-#endif // USE_LIBPNG
+#endif // CLTB_USE_LIBPNG
 }

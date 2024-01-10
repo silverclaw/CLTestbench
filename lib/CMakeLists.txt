@@ -1,6 +1,6 @@
 find_package(PNG)
 include(CMakeDependentOption)
-cmake_dependent_option(USE_LIBPNG "Add support for loading PNG files." ON
+cmake_dependent_option(CLTB_USE_LIBPNG "Add support for loading PNG files." ON
                        "PNG_FOUND" OFF)
 
 add_library(cltb_objs OBJECT
@@ -39,9 +39,9 @@ set_target_properties(cltb_objs PROPERTIES
 
 configure_file(cltb_config.h.in cltb_config.h)
 
-if (USE_LIBPNG)
+if (CLTB_USE_LIBPNG AND PNG_FOUND)
     target_link_libraries(cltb_objs PUBLIC PNG::PNG)
-endif (USE_LIBPNG)
+endif (CLTB_USE_LIBPNG AND PNG_FOUND)
 
 target_link_libraries(cltb_objs PUBLIC ${CMAKE_DL_LIBS})
 

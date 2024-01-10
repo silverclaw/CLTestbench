@@ -1,5 +1,9 @@
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig)
 
+add_executable(cltb main.cpp)
+target_link_libraries(cltb cltb_objs)
+
+if (PkgConfig_FOUND)
 pkg_check_modules(LIBEDIT IMPORTED_TARGET libedit)
 pkg_check_modules(READLINE IMPORTED_TARGET readline)
 
@@ -8,20 +12,27 @@ if (NOT LIBEDIT_FOUND AND NOT READLINE_FOUND)
 endif ()
 
 include(CMakeDependentOption)
-cmake_dependent_option(USE_LIBEDIT "Use libedit instead of readline." OFF
-                       "LIBEDIT_FOUND;READLINE_FOUND" OFF)
+cmake_dependent_option(CLTB_USE_LIBEDIT "Use libedit for line input." OFF
+                       "LIBEDIT_FOUND" OFF)
+cmake_dependent_option(CLTB_USE_READLINE "Use readline for line input." OFF
+                       "READLINE_FOUND" OFF)
 
 if (LIBEDIT_FOUND AND NOT READLINE_FOUND)
-    set(USE_LIBEDIT ON FORCE)
+    set(CLTB_USE_LIBEDIT ON FORCE)
+elseif (NOT LIBEDIT_FOUND AND READLINE_FOUND)
+    set(CLTB_USE_READLINE ON FORCE)
+elseif (LIBEDIT_FOUND AND READLINE_FOUND)
+    # Both found - pick Readline to start.
+    set(CLTB_USE_READLINE ON)
 endif ()
 
-add_executable(cltb main.cpp)
-target_link_libraries(cltb cltb_objs)
-if (USE_LIBEDIT)
+if (CLTB_USE_LIBEDIT)
     target_link_libraries(cltb PkgConfig::LIBEDIT)
-else (USE_LIBEDIT)
+elseif (CLTB_USE_READLINE)
     target_link_libraries(cltb PkgConfig::READLINE)
-endif (USE_LIBEDIT)
+endif ()
+
+endif (PkgConfig_FOUND)
 
 set_target_properties(cltb PROPERTIES
     CXX_STANDARD 17

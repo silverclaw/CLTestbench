@@ -147,7 +147,7 @@ std::shared_ptr<Object> Testbench::evaluateFile(TokenStream& tokens)
     file.seekg(start);
     file.read(data.data(), length);
 
-#if USE_LIBPNG
+#if CLTB_USE_LIBPNG
     if (filepath.extension() == ".png") {
         if (startToken || lenToken) {
             if (mOptions.verbose) {
@@ -158,7 +158,7 @@ std::shared_ptr<Object> Testbench::evaluateFile(TokenStream& tokens)
             return LoadPNG(data.data(), data.size(), filenameToken, filename);
         }
     }
-#endif // USE_LIBPNG
+#endif // CLTB_USE_LIBPNG
 
     return std::make_unique<FileDataObject>(std::string(filename), std::move(data));
 }

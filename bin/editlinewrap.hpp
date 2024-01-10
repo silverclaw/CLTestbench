@@ -17,12 +17,14 @@
 #include <cstdio>
 
 #include "cltb_config.h"
-#if CLTESTBENCH_USE_LIBEDIT
+#if CLTB_USE_LIBEDIT
     #include <histedit.h>
-#else
+#elif CLTB_USE_READLINE
     #include <readline/readline.h>
     #include <readline/history.h>
     #include <signal.h>
+#else
+    #include <iostream>
 #endif
 
 #include <string.h>
@@ -33,14 +35,14 @@ namespace CLTestbench
 class EditLine final
 {
     static constexpr const char* Prompt = "(bench) ";
-#if CLTESTBENCH_USE_LIBEDIT
+#if CLTB_USE_LIBEDIT
     ::EditLine* const mEditLine;
     ::History* const mHistory;
 
     // Taken from histedit.h, and modified to return a const char*
     typedef const char* (*el_pfunct_t)(EditLine*);
     static const char* prompt(EditLine*) noexcept { return Prompt; }
-#else // CLTESTBENCH_USE_LIBEDIT
+#elif CLTB_USE_READLINE
     char *mBuffer = nullptr;
     static void interruptHandler(int)
     {
@@ -49,6 +51,8 @@ class EditLine final
         rl_replace_line("", 0);
         rl_redisplay();
     }
+#else
+    std::string mBuffer;
 #endif // CLTESTBENCH_USE_LIBEDIT
 
     EditLine(EditLine&) = delete;
@@ -57,7 +61,7 @@ class EditLine final
     EditLine* operator=(EditLine&&) = delete;
 
   public:
-#if CLTESTBENCH_USE_LIBEDIT
+#if CLTB_USE_LIBEDIT
     EditLine() noexcept : mEditLine(el_init("CLTestbench", stdin, stdout, stderr)), mHistory(history_init())
     {
         if (!mEditLine) return;
@@ -66,16 +70,18 @@ class EditLine final
         el_set(mEditLine, EL_SIGNAL, 1);
         if (mHistory) el_set(mEditLine, EL_HIST, &::history, mHistory);
     }
-#else // CLTESTBENCH_USE_LIBEDIT
+#elif CLTB_USE_READLINE
     EditLine() noexcept
     {
         signal(SIGINT, interruptHandler);
     }
+#else
+    EditLine() = default;
 #endif // CLTESTBENCH_USE_LIBEDIT
 
     bool isValid() const noexcept
     {
-#if CLTESTBENCH_USE_LIBEDIT
+#if CLTB_USE_LIBEDIT
         return (mEditLine != nullptr);
 #else // CLTESTBENCH_USE_LIBEDIT
         return true;
@@ -84,7 +90,7 @@ class EditLine final
 
     std::string_view getLine() noexcept
     {
-#if CLTESTBENCH_USE_LIBEDIT
+#if CLTB_USE_LIBEDIT
         int read = 0;
         const char* data = el_gets(mEditLine, &read);
 
@@ -93,22 +99,26 @@ class EditLine final
             return std::string_view("");
 
         return std::string_view(data, read);
-#else // CLTESTBENCH_USE_LIBEDIT
+#elif CLTB_USE_READLINE
         free(mBuffer);
         mBuffer = readline(Prompt);
 
         if (!mBuffer || mBuffer[0] == '\0') return std::string_view("");
         add_history(mBuffer);
         return std::string_view(mBuffer);
+#else
+        std::cout << Prompt << std::flush;
+        std::getline(std::cin, mBuffer);
+        return mBuffer;
 #endif // CLTESTBENCH_USE_LIBEDIT
     }
 
     ~EditLine()
     {
-#if CLTESTBENCH_USE_LIBEDIT
+#if CLTB_USE_LIBEDIT
         el_end(mEditLine);
         history_end(mHistory);
-#else // CLTESTBENCH_USE_LIBEDIT
+#elif CLTB_USE_READLINE
         free(mBuffer);
 #endif // CLTESTBENCH_USE_LIBEDIT
     }

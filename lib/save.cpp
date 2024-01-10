@@ -68,7 +68,7 @@ void Testbench::executeSave(TokenStream& tokens)
     if (auto* data = dynamic_cast<DataObject*>(object.get())) {
         dataPtr = static_cast<const char*>(data->data());
         dataSize = data->size();
-#if USE_LIBPNG
+#if CLTB_USE_LIBPNG
         if (filepath.extension() == ".png") {
             if (ImageObject* imgObj = dynamic_cast<ImageObject*>(data)) {
                 WritePNG(*imgObj, objToken, tokens.currentTextAsToken(), filename);
@@ -77,7 +77,7 @@ void Testbench::executeSave(TokenStream& tokens)
                 *mOut << "A PNG filename was given, but object is not an image.  Writing raw data.\n";
             }
         }
-#endif // USE_LIBPNG
+#endif // CLTB_USE_LIBPNG
     } else if (auto* memObj = dynamic_cast<MemoryObject*>(object.get())) {
         assert(mDriver && "How do we have a memory object without a driver?");
         dataSize = memObj->data.mBufferSize;
@@ -97,7 +97,7 @@ void Testbench::executeSave(TokenStream& tokens)
             mDriver->readBuffer(*memObj, memObjData.data(), 0, dataSize);
         }
         dataPtr = memObjData.data();
-#if USE_LIBPNG
+#if CLTB_USE_LIBPNG
         if (filepath.extension() == ".png") {
             if (memObj->data.mDescriptor.image_width != 0) {
                 ImageDataWrapper image;
@@ -109,7 +109,7 @@ void Testbench::executeSave(TokenStream& tokens)
                 *mOut << "A PNG filename was given, but object is not an image.  Writing raw data.\n";
             }
         }
-#endif // USE_LIBPNG
+#endif // CLTB_USE_LIBPNG
     } else if (auto* progObj = dynamic_cast<ProgramObject*>(object.get())) {
         assert(mDriver && "How do we have a program object without a driver?");
         memObjData = mDriver->programBinary(*progObj);
