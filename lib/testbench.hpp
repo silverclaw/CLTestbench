@@ -14,6 +14,7 @@
 // along with CLTestbench.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
+#include <cstdint>
 #include <iosfwd>
 #include <map>
 #include <memory>
